@@ -25,27 +25,60 @@
 
 package sun.security.ssl;
 
-import java.io.*;
+import java.io.IOException;
 import java.math.BigInteger;
-import java.security.*;
-import java.util.*;
-
+import java.security.AccessController;
+import java.security.GeneralSecurityException;
+import java.security.Principal;
+import java.security.PrivateKey;
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
+import java.security.PublicKey;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.ECParameterSpec;
-
-import java.security.cert.X509Certificate;
-import java.security.cert.CertificateException;
-
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
-
-import javax.net.ssl.*;
-
+import javax.net.ssl.SNIHostName;
+import javax.net.ssl.SNIServerName;
+import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLHandshakeException;
+import javax.net.ssl.SSLProtocolException;
+import javax.net.ssl.X509ExtendedKeyManager;
+import javax.net.ssl.X509ExtendedTrustManager;
+import javax.net.ssl.X509TrustManager;
 import javax.security.auth.Subject;
 
-import sun.security.ssl.HandshakeMessage.*;
-import static sun.security.ssl.CipherSuite.KeyExchange.*;
+import org.eclipse.jetty.alpn.ALPN;
+import sun.security.ssl.HandshakeMessage.CertificateMsg;
+import sun.security.ssl.HandshakeMessage.CertificateRequest;
+import sun.security.ssl.HandshakeMessage.CertificateVerify;
+import sun.security.ssl.HandshakeMessage.ClientHello;
+import sun.security.ssl.HandshakeMessage.DH_ServerKeyExchange;
+import sun.security.ssl.HandshakeMessage.ECDH_ServerKeyExchange;
+import sun.security.ssl.HandshakeMessage.Finished;
+import sun.security.ssl.HandshakeMessage.HelloRequest;
+import sun.security.ssl.HandshakeMessage.RSA_ServerKeyExchange;
+import sun.security.ssl.HandshakeMessage.ServerHello;
+import sun.security.ssl.HandshakeMessage.ServerHelloDone;
+
+import static sun.security.ssl.CipherSuite.KeyExchange.K_DH_ANON;
+import static sun.security.ssl.CipherSuite.KeyExchange.K_ECDH_ANON;
+import static sun.security.ssl.CipherSuite.KeyExchange.K_KRB5;
+import static sun.security.ssl.CipherSuite.KeyExchange.K_KRB5_EXPORT;
+import static sun.security.ssl.CipherSuite.KeyExchange.K_RSA;
+import static sun.security.ssl.CipherSuite.KeyExchange.K_RSA_EXPORT;
+
+// ALPN_CHANGES_BEGIN
+// ALPN_CHANGES_END
 
 /**
  * ClientHandshaker does the protocol handshaking from the point
@@ -574,6 +607,9 @@ final class ClientHandshaker extends Handshaker {
             } else if ((type != ExtensionType.EXT_ELLIPTIC_CURVES)
                     && (type != ExtensionType.EXT_EC_POINT_FORMATS)
                     && (type != ExtensionType.EXT_SERVER_NAME)
+                    // ALPN_CHANGES_BEGIN
+                    && (type != ExtensionType.EXT_ALPN)
+                    // ALPN_CHANGES_END
                     && (type != ExtensionType.EXT_RENEGOTIATION_INFO)) {
                 fatalSE(Alerts.alert_unsupported_extension,
                     "Server sent an unsupported extension: " + type);
@@ -589,6 +625,37 @@ final class ClientHandshaker extends Handshaker {
         if (debug != null && Debug.isOn("handshake")) {
             System.out.println("** " + cipherSuite);
         }
+
+        // ALPN_CHANGES_BEGIN
+        if (isInitialHandshake)
+        {
+            ALPN.ClientProvider provider = (ALPN.ClientProvider)(conn != null ? ALPN.get(conn) : ALPN.get(engine));
+            Object ssl = conn != null ? conn : engine;
+            if (provider != null)
+            {
+                ALPNExtension extension = (ALPNExtension)mesg.extensions.get(ExtensionType.EXT_ALPN);
+                if (extension != null)
+                {
+                    List<String> protocols = extension.getProtocols();
+                    String protocol = protocols == null || protocols.isEmpty() ? null : protocols.get(0);
+                    if (ALPN.debug)
+                        System.err.println("[C] ALPN protocol '" + protocol + "' selected by server for " + ssl);
+                    provider.selected(protocol);
+                }
+                else
+                {
+                    if (ALPN.debug)
+                        System.err.println("[C] ALPN not supported by server for " + ssl);
+                    provider.unsupported();
+                }
+            }
+            else
+            {
+                if (ALPN.debug)
+                    System.err.println("[C] ALPN client provider not present for " + ssl);
+            }
+        }
+        // ALPN_CHANGES_END
     }
 
     /*
@@ -1303,6 +1370,44 @@ final class ClientHandshaker extends Handshaker {
                 !cipherSuites.contains(CipherSuite.C_SCSV)) {
             clientHelloMessage.addRenegotiationInfoExtension(clientVerifyData);
         }
+
+        // ALPN_CHANGES_BEGIN
+        if (isInitialHandshake)
+        {
+            ALPN.ClientProvider provider = (ALPN.ClientProvider)(conn != null ? ALPN.get(conn) : ALPN.get(engine));
+            Object ssl = conn != null ? conn : engine;
+            if (provider != null)
+            {
+                if (provider.supports())
+                {
+                    if (ALPN.debug)
+                        System.err.println("[C] ALPN supported for " + ssl);
+                    List<String> protocols = provider.protocols();
+                    if (protocols != null && !protocols.isEmpty())
+                    {
+                        if (ALPN.debug)
+                            System.err.println("[C] ALPN protocols " + protocols + " for " + ssl);
+                        clientHelloMessage.extensions.add(new ALPNExtension(protocols));
+                    }
+                    else
+                    {
+                        if (ALPN.debug)
+                            System.err.println("[C] ALPN no protocols for " + ssl);
+                    }
+                }
+                else
+                {
+                    if (ALPN.debug)
+                        System.err.println("[C] ALPN not supported for " + ssl);
+                }
+            }
+            else
+            {
+                if (ALPN.debug)
+                    System.err.println("[C] ALPN client provider not present for " + ssl);
+            }
+        }
+        // ALPN_CHANGES_END
 
         return clientHelloMessage;
     }

@@ -27,8 +27,10 @@ package sun.security.ssl;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.*;
-import javax.net.ssl.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import javax.net.ssl.SSLProtocolException;
 
 /**
  * This file contains all the classes relevant to TLS Extensions for the
@@ -85,6 +87,10 @@ final class HelloExtensions {
                         new SupportedEllipticPointFormatsExtension(s, extlen);
             } else if (extType == ExtensionType.EXT_RENEGOTIATION_INFO) {
                 extension = new RenegotiationInfoExtension(s, extlen);
+            // ALPN_CHANGES_BEGIN
+            } else if (extType == ExtensionType.EXT_ALPN) {
+                extension = new ALPNExtension(s, extlen);
+            // ALPN_CHANGES_END
             } else {
                 extension = new UnknownExtension(s, extlen, extType);
             }
