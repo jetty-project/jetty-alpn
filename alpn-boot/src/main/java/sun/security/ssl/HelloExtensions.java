@@ -27,10 +27,8 @@ package sun.security.ssl;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import javax.net.ssl.SSLProtocolException;
+import java.util.*;
+import javax.net.ssl.*;
 
 /**
  * This file contains all the classes relevant to TLS Extensions for the

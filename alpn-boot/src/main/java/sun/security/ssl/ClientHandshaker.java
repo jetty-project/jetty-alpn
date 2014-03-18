@@ -25,59 +25,30 @@
 
 package sun.security.ssl;
 
-import java.io.IOException;
+import java.io.*;
 import java.math.BigInteger;
-import java.security.AccessController;
-import java.security.GeneralSecurityException;
-import java.security.Principal;
-import java.security.PrivateKey;
-import java.security.PrivilegedActionException;
-import java.security.PrivilegedExceptionAction;
-import java.security.PublicKey;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
+import java.security.*;
+import java.util.*;
+
 import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.ECParameterSpec;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
+
+import java.security.cert.X509Certificate;
+import java.security.cert.CertificateException;
+
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
-import javax.net.ssl.SNIHostName;
-import javax.net.ssl.SNIServerName;
-import javax.net.ssl.SSLException;
-import javax.net.ssl.SSLHandshakeException;
-import javax.net.ssl.SSLProtocolException;
-import javax.net.ssl.X509ExtendedKeyManager;
-import javax.net.ssl.X509ExtendedTrustManager;
-import javax.net.ssl.X509TrustManager;
+
+import javax.net.ssl.*;
+
 import javax.security.auth.Subject;
 
-import org.eclipse.jetty.alpn.ALPN;
-import sun.security.ssl.HandshakeMessage.CertificateMsg;
-import sun.security.ssl.HandshakeMessage.CertificateRequest;
-import sun.security.ssl.HandshakeMessage.CertificateVerify;
-import sun.security.ssl.HandshakeMessage.ClientHello;
-import sun.security.ssl.HandshakeMessage.DH_ServerKeyExchange;
-import sun.security.ssl.HandshakeMessage.ECDH_ServerKeyExchange;
-import sun.security.ssl.HandshakeMessage.Finished;
-import sun.security.ssl.HandshakeMessage.HelloRequest;
-import sun.security.ssl.HandshakeMessage.RSA_ServerKeyExchange;
-import sun.security.ssl.HandshakeMessage.ServerHello;
-import sun.security.ssl.HandshakeMessage.ServerHelloDone;
-
-import static sun.security.ssl.CipherSuite.KeyExchange.K_DH_ANON;
-import static sun.security.ssl.CipherSuite.KeyExchange.K_ECDH_ANON;
-import static sun.security.ssl.CipherSuite.KeyExchange.K_KRB5;
-import static sun.security.ssl.CipherSuite.KeyExchange.K_KRB5_EXPORT;
-import static sun.security.ssl.CipherSuite.KeyExchange.K_RSA;
-import static sun.security.ssl.CipherSuite.KeyExchange.K_RSA_EXPORT;
+import sun.security.ssl.HandshakeMessage.*;
+import static sun.security.ssl.CipherSuite.KeyExchange.*;
 
 // ALPN_CHANGES_BEGIN
+import org.eclipse.jetty.alpn.ALPN;
 // ALPN_CHANGES_END
 
 /**
