@@ -38,7 +38,7 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>jetty-alpn</groupId>
+            <groupId>org.eclipse.jetty.alpn</groupId>
             <artifactId>alpn-api</artifactId>
             <version>${alpn-api-version}</version>
             <scope>test</scope>
