@@ -50,6 +50,10 @@ import static sun.security.ssl.CipherSuite.KeyExchange.*;
 
 import sun.net.util.IPAddressUtil;
 
+// ALPN_CHANGES_BEGIN
+import org.eclipse.jetty.alpn.ALPN;
+// ALPN_CHANGES_END
+
 /**
  * ClientHandshaker does the protocol handshaking from the point
  * of view of a client.  It is driven asychronously by handshake messages
@@ -572,6 +576,9 @@ final class ClientHandshaker extends Handshaker {
             if ((type != ExtensionType.EXT_ELLIPTIC_CURVES)
                     && (type != ExtensionType.EXT_EC_POINT_FORMATS)
                     && (type != ExtensionType.EXT_SERVER_NAME)
+                    // ALPN_CHANGES_BEGIN
+                    && (type != ExtensionType.EXT_ALPN)
+                    // ALPN_CHANGES_END
                     && (type != ExtensionType.EXT_RENEGOTIATION_INFO)) {
                 fatalSE(Alerts.alert_unsupported_extension,
                     "Server sent an unsupported extension: " + type);
@@ -586,6 +593,37 @@ final class ClientHandshaker extends Handshaker {
         if (debug != null && Debug.isOn("handshake")) {
             System.out.println("** " + cipherSuite);
         }
+
+        // ALPN_CHANGES_BEGIN
+        if (isInitialHandshake)
+        {
+            ALPN.ClientProvider provider = (ALPN.ClientProvider)(conn != null ? ALPN.get(conn) : ALPN.get(engine));
+            Object ssl = conn != null ? conn : engine;
+            if (provider != null)
+            {
+                ALPNExtension extension = (ALPNExtension)mesg.extensions.get(ExtensionType.EXT_ALPN);
+                if (extension != null)
+                {
+                    List<String> protocols = extension.getProtocols();
+                    String protocol = protocols == null || protocols.isEmpty() ? null : protocols.get(0);
+                    if (ALPN.debug)
+                        System.err.println("[C] ALPN protocol '" + protocol + "' selected by server for " + ssl);
+                    provider.selected(protocol);
+                }
+                else
+                {
+                    if (ALPN.debug)
+                        System.err.println("[C] ALPN not supported by server for " + ssl);
+                    provider.unsupported();
+                }
+            }
+            else
+            {
+                if (ALPN.debug)
+                    System.err.println("[C] ALPN client provider not present for " + ssl);
+            }
+        }
+        // ALPN_CHANGES_END
     }
 
     /*
@@ -1276,6 +1314,44 @@ final class ClientHandshaker extends Handshaker {
                 !cipherSuites.contains(CipherSuite.C_SCSV)) {
             clientHelloMessage.addRenegotiationInfoExtension(clientVerifyData);
         }
+
+        // ALPN_CHANGES_BEGIN
+        if (isInitialHandshake)
+        {
+            ALPN.ClientProvider provider = (ALPN.ClientProvider)(conn != null ? ALPN.get(conn) : ALPN.get(engine));
+            Object ssl = conn != null ? conn : engine;
+            if (provider != null)
+            {
+                if (provider.supports())
+                {
+                    if (ALPN.debug)
+                        System.err.println("[C] ALPN supported for " + ssl);
+                    List<String> protocols = provider.protocols();
+                    if (protocols != null && !protocols.isEmpty())
+                    {
+                        if (ALPN.debug)
+                            System.err.println("[C] ALPN protocols " + protocols + " for " + ssl);
+                        clientHelloMessage.extensions.add(new ALPNExtension(protocols));
+                    }
+                    else
+                    {
+                        if (ALPN.debug)
+                            System.err.println("[C] ALPN no protocols for " + ssl);
+                    }
+                }
+                else
+                {
+                    if (ALPN.debug)
+                        System.err.println("[C] ALPN not supported for " + ssl);
+                }
+            }
+            else
+            {
+                if (ALPN.debug)
+                    System.err.println("[C] ALPN client provider not present for " + ssl);
+            }
+        }
+        // ALPN_CHANGES_END
 
         return clientHelloMessage;
     }

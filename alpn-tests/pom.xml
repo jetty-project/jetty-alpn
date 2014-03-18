@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <groupId>org.mortbay.jetty.alpn</groupId>
+        <artifactId>alpn-project</artifactId>
+        <version>7.0.0-SNAPSHOT</version>
+    </parent>
+
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>alpn-tests</artifactId>
+    <name>Jetty :: ALPN :: Tests</name>
+
+    <properties>
+        <boot-artifactId>alpn-boot</boot-artifactId>
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.9</version>
+                <configuration>
+                    <argLine>
+                        -Xbootclasspath/p:${basedir}/../${boot-artifactId}/target/${boot-artifactId}-${project.version}.jar
+                    </argLine>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.11</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>jetty-alpn</groupId>
+            <artifactId>alpn-api</artifactId>
+            <version>${alpn-api-version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+</project>

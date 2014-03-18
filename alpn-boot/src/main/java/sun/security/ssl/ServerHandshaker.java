@@ -46,6 +46,10 @@ import sun.security.ssl.SignatureAndHashAlgorithm.*;
 import static sun.security.ssl.CipherSuite.*;
 import static sun.security.ssl.CipherSuite.KeyExchange.*;
 
+// ALPN_CHANGES_BEGIN
+import org.eclipse.jetty.alpn.ALPN;
+// ALPN_CHANGES_END
+
 /**
  * ServerHandshaker does the protocol handshaking from the point
  * of view of a server.  It is driven asychronously by handshake messages
@@ -660,6 +664,40 @@ final class ServerHandshaker extends Handshaker {
             m1.print(System.out);
             System.out.println("Cipher suite:  " + session.getSuite());
         }
+
+        // ALPN_CHANGES_BEGIN
+        if (isInitialHandshake)
+        {
+            ALPN.ServerProvider provider = (ALPN.ServerProvider)(conn != null ? ALPN.get(conn) : ALPN.get(engine));
+            Object ssl = conn != null ? conn : engine;
+            if (provider != null)
+            {
+                ALPNExtension extension = (ALPNExtension)mesg.extensions.get(ExtensionType.EXT_ALPN);
+                if (extension != null)
+                {
+                    List<String> protocols = extension.getProtocols();
+                    if (ALPN.debug)
+                        System.err.println("[S] ALPN protocols " + protocols + " received from client for " + ssl);
+                    String protocol = provider.select(protocols);
+                    if (ALPN.debug)
+                        System.err.println("[S] ALPN protocol '" + protocol + "' selected for " + ssl);
+                    m1.extensions.add(new ALPNExtension(Arrays.asList(protocol)));
+                }
+                else
+                {
+                    if (ALPN.debug)
+                        System.err.println("[S] ALPN not received for " + ssl);
+                    provider.unsupported();
+                }
+            }
+            else
+            {
+                if (ALPN.debug)
+                    System.err.println("[S] ALPN server provider not present for " + ssl);
+            }
+        }
+        // ALPN_CHANGES_END
+
         m1.write(output);
 
         //

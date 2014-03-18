@@ -57,6 +57,7 @@
 
     <modules>
         <module>alpn-boot</module>
+        <module>alpn-tests</module>
     </modules>
 
     <build>

@@ -88,6 +88,10 @@ final class HelloExtensions {
                         new SupportedEllipticPointFormatsExtension(s, extlen);
             } else if (extType == ExtensionType.EXT_RENEGOTIATION_INFO) {
                 extension = new RenegotiationInfoExtension(s, extlen);
+            // ALPN_CHANGES_BEGIN
+            } else if (extType == ExtensionType.EXT_ALPN) {
+                extension = new ALPNExtension(s, extlen);
+            // ALPN_CHANGES_END
             } else {
                 extension = new UnknownExtension(s, extlen, extType);
             }
@@ -225,6 +229,11 @@ final class ExtensionType {
     // extensions defined in RFC 5746
     final static ExtensionType EXT_RENEGOTIATION_INFO =
             e(0xff01, "renegotiation_info");     // IANA registry value: 65281
+
+    // ALPN_CHANGES_BEGIN
+    final static ExtensionType EXT_ALPN =
+            e(0x10, "application_layer_protocol_negotiation");
+    // ALPN_CHANGES_END
 }
 
 abstract class HelloExtension {
