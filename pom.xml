@@ -52,7 +52,7 @@
     </scm>
 
     <properties>
-        <alpn-api-version>1.0.0-SNAPSHOT</alpn-api-version>
+        <alpn-api-version>1.0.0</alpn-api-version>
     </properties>
 
     <modules>
