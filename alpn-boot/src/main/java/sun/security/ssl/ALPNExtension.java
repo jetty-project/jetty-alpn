@@ -19,9 +19,10 @@ package sun.security.ssl;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+
 import javax.net.ssl.SSLProtocolException;
 
 public class ALPNExtension extends HelloExtension
@@ -45,7 +46,7 @@ public class ALPNExtension extends HelloExtension
         while (length > 0)
         {
             byte[] protocolBytes = input.getBytes8();
-            protocols.add(new String(protocolBytes, "UTF-8"));
+            protocols.add(new String(protocolBytes, StandardCharsets.UTF_8));
             length -= 1 + protocolBytes.length;
         }
         content = init();
@@ -54,9 +55,10 @@ public class ALPNExtension extends HelloExtension
     private byte[] init() throws SSLProtocolException
     {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-        for (String protocol : protocols)
+        for (int i = 0; i < protocols.size(); ++i)
         {
-            byte[] protocolBytes = protocol.getBytes(Charset.forName("UTF-8"));
+            String protocol = protocols.get(i);
+            byte[] protocolBytes = protocol.getBytes(StandardCharsets.UTF_8);
             int length = protocolBytes.length;
             if (length > 255)
                 throw new SSLProtocolException("Protocol name too long: " + protocol);
@@ -93,6 +95,6 @@ public class ALPNExtension extends HelloExtension
     @Override
     public String toString()
     {
-        return "Extension " + type + ", protocols: " + protocols;
+        return new StringBuilder("Extension ").append(type).append(", protocols: ").append(protocols).toString();
     }
 }
