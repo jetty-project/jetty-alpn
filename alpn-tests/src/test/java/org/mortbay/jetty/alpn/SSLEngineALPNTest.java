@@ -264,8 +264,8 @@ public class SSLEngineALPNTest
         final int readTimeout = 5000;
         final String protocolName = "test";
         final ServerSocketChannel server = ServerSocketChannel.open();
-        final CountDownLatch latch = new CountDownLatch(1);
         server.bind(new InetSocketAddress("localhost", 0));
+        System.err.println("Server listening on " + server.getLocalAddress());
         new Thread()
         {
             @Override
