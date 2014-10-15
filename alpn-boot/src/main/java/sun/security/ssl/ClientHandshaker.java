@@ -605,10 +605,17 @@ final class ClientHandshaker extends Handshaker {
                 if (extension != null)
                 {
                     List<String> protocols = extension.getProtocols();
-                    String protocol = protocols == null || protocols.isEmpty() ? null : protocols.get(0);
-                    if (ALPN.debug)
-                        System.err.println("[C] ALPN protocol '" + protocol + "' selected by server for " + ssl);
-                    provider.selected(protocol);
+                    try
+                    {
+                        String protocol = protocols == null || protocols.isEmpty() ? null : protocols.get(0);
+                        if (ALPN.debug)
+                            System.err.println("[C] ALPN protocol '" + protocol + "' selected by server for " + ssl);
+                        provider.selected(protocol);
+                    }
+                    catch (Throwable x)
+                    {
+                        fatalSE(Alerts.alert_no_application_protocol, "Could not negotiate application protocol", x);
+                    }
                 }
                 else
                 {
@@ -1322,27 +1329,17 @@ final class ClientHandshaker extends Handshaker {
             Object ssl = conn != null ? conn : engine;
             if (provider != null)
             {
-                if (provider.supports())
+                List<String> protocols = provider.protocols();
+                if (protocols != null && !protocols.isEmpty())
                 {
                     if (ALPN.debug)
-                        System.err.println("[C] ALPN supported for " + ssl);
-                    List<String> protocols = provider.protocols();
-                    if (protocols != null && !protocols.isEmpty())
-                    {
-                        if (ALPN.debug)
-                            System.err.println("[C] ALPN protocols " + protocols + " for " + ssl);
-                        clientHelloMessage.extensions.add(new ALPNExtension(protocols));
-                    }
-                    else
-                    {
-                        if (ALPN.debug)
-                            System.err.println("[C] ALPN no protocols for " + ssl);
-                    }
+                        System.err.println("[C] ALPN protocols " + protocols + " for " + ssl);
+                    clientHelloMessage.extensions.add(new ALPNExtension(protocols));
                 }
                 else
                 {
                     if (ALPN.debug)
-                        System.err.println("[C] ALPN not supported for " + ssl);
+                        System.err.println("[C] ALPN not supported, no protocols for " + ssl);
                 }
             }
             else

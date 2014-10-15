@@ -39,7 +39,7 @@ import org.junit.Test;
 public class SSLSocketALPNTest
 {
     @Test
-    public void testSSLSocket() throws Exception
+    public void testNegotiationSuccessful() throws Exception
     {
         ALPN.debug = true;
 
@@ -48,7 +48,7 @@ public class SSLSocketALPNTest
         final int readTimeout = 50000;
         final String data = "data";
         final String protocolName = "test";
-        final AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(4));
+        final AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(3));
         final SSLServerSocket server = (SSLServerSocket)context.getServerSocketFactory().createServerSocket();
         server.bind(new InetSocketAddress("localhost", 0));
         final CountDownLatch handshakeLatch = new CountDownLatch(2);
@@ -138,22 +138,15 @@ public class SSLSocketALPNTest
         ALPN.put(client, new ALPN.ClientProvider()
         {
             @Override
-            public boolean supports()
+            public List<String> protocols()
             {
                 latch.get().countDown();
-                return true;
+                return Arrays.asList(protocolName);
             }
 
             @Override
             public void unsupported()
             {
-            }
-
-            @Override
-            public List<String> protocols()
-            {
-                latch.get().countDown();
-                return Arrays.asList(protocolName);
             }
 
             @Override

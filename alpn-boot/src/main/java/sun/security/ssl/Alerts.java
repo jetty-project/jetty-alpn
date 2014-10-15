@@ -83,6 +83,10 @@ final class Alerts {
     static final byte           alert_bad_certificate_status_response = 113;
     static final byte           alert_bad_certificate_hash_value = 114;
 
+    // ALPN_CHANGES_BEGIN
+    static final byte           alert_no_application_protocol = 120;
+    // ALPN_CHANGES_END
+
     static String alertDescription(byte code) {
         switch (code) {
 
@@ -144,6 +148,10 @@ final class Alerts {
             return "bad_certificate_status_response";
         case alert_bad_certificate_hash_value:
             return "bad_certificate_hash_value";
+        // ALPN_CHANGES_BEGIN
+        case alert_no_application_protocol:
+            return "no_application_protocol";
+        // ALPN_CHANGES_END
 
         default:
             return "<UNKNOWN ALERT: " + (code & 0x0ff) + ">";
@@ -189,6 +197,9 @@ final class Alerts {
         case alert_unrecognized_name:
         case alert_bad_certificate_status_response:
         case alert_bad_certificate_hash_value:
+        // ALPN_CHANGES_BEGIN
+        case alert_no_application_protocol:
+        // ALPN_CHANGES_END
             e = new SSLHandshakeException(reason);
             break;
 
