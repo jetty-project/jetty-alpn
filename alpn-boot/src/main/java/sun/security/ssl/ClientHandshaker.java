@@ -610,15 +610,14 @@ final class ClientHandshaker extends Handshaker {
                     List<String> protocols = extension.getProtocols();
                     try
                     {
-                        String protocol = protocols.get(0);
+                        String protocol = protocols == null || protocols.isEmpty() ? null : protocols.get(0);
                         if (ALPN.debug)
                             System.err.println("[C] ALPN protocol '" + protocol + "' selected by server for " + ssl);
                         provider.selected(protocol);
                     }
-                    catch (Throwable t)
+                    catch (Throwable x)
                     {
-                        fatalSE(Alerts.alert_handshake_failure, "selected application protocol not acceptable", t);
-                        return;
+                        fatalSE(Alerts.alert_no_application_protocol, "Could not negotiate application protocol", x);
                     }
                 }
                 else
@@ -1357,8 +1356,6 @@ final class ClientHandshaker extends Handshaker {
             Object ssl = conn != null ? conn : engine;
             if (provider != null)
             {
-                if (ALPN.debug)
-                    System.err.println("[C] ALPN supported by client for " + ssl);
                 List<String> protocols = provider.protocols();
                 if (protocols != null && !protocols.isEmpty())
                 {
@@ -1369,7 +1366,7 @@ final class ClientHandshaker extends Handshaker {
                 else
                 {
                     if (ALPN.debug)
-                        System.err.println("[C] ALPN not supported by server for " + ssl);
+                        System.err.println("[C] ALPN not supported, no protocols for " + ssl);
                 }
             }
             else

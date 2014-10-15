@@ -55,9 +55,8 @@ public class ALPNExtension extends HelloExtension
     private byte[] init() throws SSLProtocolException
     {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-        for (int i = 0; i < protocols.size(); ++i)
+        for (String protocol : protocols)
         {
-            String protocol = protocols.get(i);
             byte[] protocolBytes = protocol.getBytes(StandardCharsets.UTF_8);
             int length = protocolBytes.length;
             if (length > 255)
@@ -95,6 +94,6 @@ public class ALPNExtension extends HelloExtension
     @Override
     public String toString()
     {
-        return new StringBuilder("Extension ").append(type).append(", protocols: ").append(protocols).toString();
+        return String.format("Extension %s, protocols: %s", type, protocols);
     }
 }

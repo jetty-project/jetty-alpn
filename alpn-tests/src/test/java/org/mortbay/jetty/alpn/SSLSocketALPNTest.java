@@ -37,7 +37,7 @@ import org.junit.Test;
 public class SSLSocketALPNTest
 {
     @Test
-    public void testSSLSocket() throws Exception
+    public void testNegotiationSuccessful() throws Exception
     {
         ALPN.debug = true;
 
@@ -131,16 +131,16 @@ public class SSLSocketALPNTest
         ALPN.put(client, new ALPN.ClientProvider()
         {
             @Override
-            public void unsupported()
-            {
-                ALPN.remove(client);
-            }
-
-            @Override
             public List<String> protocols()
             {
                 latch.get().countDown();
                 return Arrays.asList(protocolName);
+            }
+
+            @Override
+            public void unsupported()
+            {
+                ALPN.remove(client);
             }
 
             @Override

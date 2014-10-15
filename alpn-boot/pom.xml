@@ -14,7 +14,6 @@
         <plugins>
             <plugin>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>1.6</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -34,7 +33,6 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
-                <version>1.7</version>
                 <executions>
                     <execution>
                         <id>parse-version</id>
@@ -57,9 +55,7 @@
                         </goals>
                         <configuration>
                             <instructions>
-                                <Export-Package>
-                                    org.eclipse.jetty.alpn;sun.security.ssl;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
-                                </Export-Package>
+                                <Export-Package>org.eclipse.jetty.alpn;sun.security.ssl;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"</Export-Package>
                                 <Import-Package>!sun.*,</Import-Package>
                                 <_nouses>true</_nouses>
                             </instructions>
@@ -68,7 +64,6 @@
                 </executions>
             </plugin>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
                 <configuration>
                     <archive>
@@ -83,7 +78,6 @@
         <dependency>
             <groupId>org.eclipse.jetty.alpn</groupId>
             <artifactId>alpn-api</artifactId>
-            <version>${alpn-api-version}</version>
         </dependency>
     </dependencies>
 
