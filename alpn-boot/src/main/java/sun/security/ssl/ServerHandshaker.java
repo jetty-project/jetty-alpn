@@ -786,10 +786,19 @@ final class ServerHandshaker extends Handshaker {
                     List<String> protocols = extension.getProtocols();
                     if (ALPN.debug)
                         System.err.println("[S] ALPN protocols " + protocols + " received from client for " + ssl);
-                    String protocol = provider.select(protocols);
-                    if (ALPN.debug)
-                        System.err.println("[S] ALPN protocol '" + protocol + "' selected for " + ssl);
-                    m1.extensions.add(new ALPNExtension(Arrays.asList(protocol)));
+                    try
+                    {
+                        String protocol = provider.select(protocols);
+                        if (ALPN.debug)
+                            System.err.println("[S] ALPN protocol '" + protocol + "' selected for " + ssl);
+                        if (protocol != null)
+                            m1.extensions.add(new ALPNExtension(Arrays.asList(protocol)));
+                    }
+                    catch (Throwable t)
+                    {
+                        fatalSE(Alerts.alert_no_application_protocol, "no acceptable application protocols found", t);
+                        return;
+                    }
                 }
                 else
                 {

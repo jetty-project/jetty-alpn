@@ -46,7 +46,7 @@ public class SSLSocketALPNTest
         final int readTimeout = 50000;
         final String data = "data";
         final String protocolName = "test";
-        final AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(4));
+        final AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(3));
         final SSLServerSocket server = (SSLServerSocket)context.getServerSocketFactory().createServerSocket();
         server.bind(new InetSocketAddress("localhost", 0));
         final CountDownLatch handshakeLatch = new CountDownLatch(2);
@@ -57,7 +57,7 @@ public class SSLSocketALPNTest
             {
                 try
                 {
-                    SSLSocket socket = (SSLSocket)server.accept();
+                    final SSLSocket socket = (SSLSocket)server.accept();
                     socket.setUseClientMode(false);
                     socket.setSoTimeout(readTimeout);
                     ALPN.put(socket, new ALPN.ServerProvider()
@@ -65,11 +65,13 @@ public class SSLSocketALPNTest
                         @Override
                         public void unsupported()
                         {
+                            ALPN.remove(socket);
                         }
 
                         @Override
                         public String select(List<String> protocols)
                         {
+                            ALPN.remove(socket);
                             Assert.assertEquals(1, protocols.size());
                             String protocol = protocols.get(0);
                             Assert.assertEquals(protocolName, protocol);
@@ -123,21 +125,15 @@ public class SSLSocketALPNTest
             }
         }.start();
 
-        SSLSocket client = (SSLSocket)context.getSocketFactory().createSocket("localhost", server.getLocalPort());
+        final SSLSocket client = (SSLSocket)context.getSocketFactory().createSocket("localhost", server.getLocalPort());
         client.setUseClientMode(true);
         client.setSoTimeout(readTimeout);
         ALPN.put(client, new ALPN.ClientProvider()
         {
             @Override
-            public boolean supports()
-            {
-                latch.get().countDown();
-                return true;
-            }
-
-            @Override
             public void unsupported()
             {
+                ALPN.remove(client);
             }
 
             @Override
@@ -150,6 +146,7 @@ public class SSLSocketALPNTest
             @Override
             public void selected(String protocol)
             {
+                ALPN.remove(client);
                 Assert.assertEquals(protocolName, protocol);
                 latch.get().countDown();
             }

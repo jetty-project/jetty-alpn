@@ -50,7 +50,7 @@
     </scm>
 
     <properties>
-        <alpn-api-version>1.0.0</alpn-api-version>
+        <alpn-api-version>1.1.0.v20141014</alpn-api-version>
     </properties>
 
     <modules>
