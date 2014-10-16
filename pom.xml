@@ -9,7 +9,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.mortbay.jetty.alpn</groupId>
     <artifactId>alpn-project</artifactId>
-    <version>8.0.1-SNAPSHOT</version>
+    <version>8.1.0.v20141016</version>
     <packaging>pom</packaging>
     <name>Jetty :: ALPN :: Project</name>
 
@@ -47,7 +47,8 @@
         <connection>scm:git:git://github.com/jetty-project/jetty-alpn.git</connection>
         <developerConnection>scm:git:ssh://git@github.com/jetty-project/jetty-alpn.git</developerConnection>
         <url>https://github.com/jetty-project/jetty-alpn</url>
-    </scm>
+      <tag>alpn-project-8.1.0.v20141016</tag>
+  </scm>
 
     <modules>
         <module>alpn-boot</module>
