@@ -9,7 +9,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.mortbay.jetty.alpn</groupId>
     <artifactId>alpn-project</artifactId>
-    <version>7.1.0.v20141016</version>
+    <version>7.0.0.1-dev</version>
     <packaging>pom</packaging>
     <name>Jetty :: ALPN :: Project</name>
 

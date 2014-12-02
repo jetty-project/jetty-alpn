@@ -18,40 +18,45 @@
 
 package org.mortbay.jetty.alpn;
 
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.InetSocketAddress;
-import java.util.Arrays;
-import java.util.List;
+import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-import javax.net.ssl.HandshakeCompletedEvent;
-import javax.net.ssl.HandshakeCompletedListener;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
 
 import org.eclipse.jetty.alpn.ALPN;
+import org.junit.After;
 import org.junit.Assert;
-import org.junit.Test;
 
-public class SSLSocketALPNTest
+public class SSLSocketALPNTest extends AbstractALPNTest<SSLSocket>
 {
-    @Test
-    public void testNegotiationSuccessful() throws Exception
+    private SSLServerSocket acceptor;
+
+    @After
+    public void dispose() throws Exception
     {
-        ALPN.debug = true;
+        if (acceptor != null)
+            acceptor.close();
+    }
 
-        SSLContext context = SSLSupport.newSSLContext();
+    @Override
+    protected SSLResult<SSLSocket> performTLSHandshake(SSLResult<SSLSocket> handshake, ALPN.ClientProvider clientProvider, final ALPN.ServerProvider serverProvider) throws Exception
+    {
+        SSLContext sslContext = handshake == null ? SSLSupport.newSSLContext() : handshake.context;
 
-        final int readTimeout = 50000;
-        final String data = "data";
-        final String protocolName = "test";
-        final AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(3));
-        final SSLServerSocket server = (SSLServerSocket)context.getServerSocketFactory().createServerSocket();
-        server.bind(new InetSocketAddress("localhost", 0));
-        final CountDownLatch handshakeLatch = new CountDownLatch(2);
+        final CountDownLatch latch = new CountDownLatch(2);
+        final SSLResult<SSLSocket> sslResult = new SSLResult<>();
+        sslResult.context = sslContext;
+        final int readTimeout = 5000;
+        if (handshake == null)
+        {
+            acceptor = (SSLServerSocket)sslContext.getServerSocketFactory().createServerSocket();
+            acceptor.bind(new InetSocketAddress("localhost", 0));
+        }
+
         new Thread()
         {
             @Override
@@ -59,71 +64,15 @@ public class SSLSocketALPNTest
             {
                 try
                 {
-                    SSLSocket socket = (SSLSocket)server.accept();
-                    socket.setUseClientMode(false);
-                    socket.setSoTimeout(readTimeout);
-                    ALPN.put(socket, new ALPN.ServerProvider()
-                    {
-                        @Override
-                        public void unsupported()
-                        {
-                        }
+                    SSLSocket serverSSLSocket = (SSLSocket)acceptor.accept();
+                    System.err.println(serverSSLSocket);
+                    sslResult.server = serverSSLSocket;
 
-                        @Override
-                        public String select(List<String> protocols)
-                        {
-                            Assert.assertEquals(1, protocols.size());
-                            String protocol = protocols.get(0);
-                            Assert.assertEquals(protocolName, protocol);
-                            latch.get().countDown();
-                            return protocol;
-                        }
-                    });
-                    socket.addHandshakeCompletedListener(new HandshakeCompletedListener()
-                    {
-                        @Override
-                        public void handshakeCompleted(HandshakeCompletedEvent event)
-                        {
-                            handshakeLatch.countDown();
-                        }
-                    });
-                    socket.startHandshake();
-
-                    InputStream serverInput = socket.getInputStream();
-                    for (int i = 0; i < data.length(); ++i)
-                    {
-                        int read = serverInput.read();
-                        Assert.assertEquals(data.charAt(i), read);
-                    }
-
-                    OutputStream serverOutput = socket.getOutputStream();
-                    serverOutput.write(data.getBytes("UTF-8"));
-                    serverOutput.flush();
-
-                    for (int i = 0; i < data.length(); ++i)
-                    {
-                        int read = serverInput.read();
-                        Assert.assertEquals(data.charAt(i), read);
-                    }
-
-                    serverOutput.write(data.getBytes("UTF-8"));
-                    serverOutput.flush();
-
-                    // Re-handshake
-                    socket.startHandshake();
-
-                    for (int i = 0; i < data.length(); ++i)
-                    {
-                        int read = serverInput.read();
-                        Assert.assertEquals(data.charAt(i), read);
-                    }
-
-                    serverOutput.write(data.getBytes("UTF-8"));
-                    serverOutput.flush();
-
-                    Assert.assertEquals(4, latch.get().getCount());
-
-                    socket.close();
+                    serverSSLSocket.setUseClientMode(false);
+                    serverSSLSocket.setSoTimeout(readTimeout);
+                    ALPN.put(serverSSLSocket, serverProvider);
+                    serverSSLSocket.startHandshake();
+                    latch.countDown();
                 }
                 catch (Exception x)
                 {
@@ -132,84 +81,66 @@ public class SSLSocketALPNTest
             }
         }.start();
 
-        SSLSocket client = (SSLSocket)context.getSocketFactory().createSocket("localhost", server.getLocalPort());
-        client.setUseClientMode(true);
-        client.setSoTimeout(readTimeout);
-        ALPN.put(client, new ALPN.ClientProvider()
-        {
-            @Override
-            public List<String> protocols()
-            {
-                latch.get().countDown();
-                return Arrays.asList(protocolName);
-            }
+        SSLSocket clientSSLSocket = (SSLSocket)sslContext.getSocketFactory().createSocket("localhost", acceptor.getLocalPort());
+        sslResult.client = clientSSLSocket;
+        latch.countDown();
 
-            @Override
-            public void unsupported()
-            {
-            }
+        clientSSLSocket.setUseClientMode(true);
+        clientSSLSocket.setSoTimeout(readTimeout);
+        ALPN.put(clientSSLSocket, clientProvider);
+        clientSSLSocket.startHandshake();
 
-            @Override
-            public void selected(String protocol)
-            {
-                Assert.assertEquals(protocolName, protocol);
-                latch.get().countDown();
-            }
-        });
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        return sslResult;
+    }
 
-        client.addHandshakeCompletedListener(new HandshakeCompletedListener()
-        {
-            @Override
-            public void handshakeCompleted(HandshakeCompletedEvent event)
-            {
-                handshakeLatch.countDown();
-            }
-        });
-        client.startHandshake();
+    @Override
+    protected void performTLSClose(SSLResult<SSLSocket> sslResult) throws Exception
+    {
+        sslResult.client.close();
+        sslResult.server.close();
+    }
 
-        Assert.assertTrue(latch.get().await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(handshakeLatch.await(5, TimeUnit.SECONDS));
+    @Override
+    protected void performDataExchange(SSLResult<SSLSocket> sslResult) throws Exception
+    {
+        SSLSocket clientSSLSocket = sslResult.client;
+        SSLSocket serverSSLSocket = sslResult.server;
 
-        // Check whether we can write real data to the connection
-        OutputStream clientOutput = client.getOutputStream();
-        clientOutput.write(data.getBytes("UTF-8"));
-        clientOutput.flush();
+        byte[] data = new byte[1024];
+        new Random().nextBytes(data);
 
-        InputStream clientInput = client.getInputStream();
-        for (int i = 0; i < data.length(); ++i)
-        {
-            int read = clientInput.read();
-            Assert.assertEquals(data.charAt(i), read);
-        }
+        // Write the data.
+        clientSSLSocket.getOutputStream().write(data);
 
-        // Re-handshake
-        latch.set(new CountDownLatch(4));
-        client.startHandshake();
-        Assert.assertEquals(4, latch.get().getCount());
+        // Read the data.
+        byte[] buffer = new byte[data.length];
+        int read = 0;
+        while (read < data.length)
+            read += serverSSLSocket.getInputStream().read(buffer);
 
-        clientOutput.write(data.getBytes("UTF-8"));
-        clientOutput.flush();
+        // Write the data back.
+        serverSSLSocket.getOutputStream().write(buffer, 0, read);
 
-        for (int i = 0; i < data.length(); ++i)
-        {
-            int read = clientInput.read();
-            Assert.assertEquals(data.charAt(i), read);
-        }
+        // Read the echo.
+        read = 0;
+        while (read < data.length)
+            read += clientSSLSocket.getInputStream().read(buffer);
+    }
 
-        clientOutput.write(data.getBytes("UTF-8"));
-        clientOutput.flush();
+    @Override
+    protected void performTLSRenegotiation(SSLResult<SSLSocket> sslResult, boolean client) throws Exception
+    {
+        if (client)
+            sslResult.client.startHandshake();
+        else
+            sslResult.server.startHandshake();
+    }
 
-        for (int i = 0; i < data.length(); ++i)
-        {
-            int read = clientInput.read();
-            Assert.assertEquals(data.charAt(i), read);
-        }
-
-        int read = clientInput.read();
-        Assert.assertEquals(-1, read);
-
-        client.close();
-
-        server.close();
+    @Override
+    protected SSLSession getSSLSession(SSLResult<SSLSocket> sslResult, boolean client) throws Exception
+    {
+        SSLSocket sslSocket = client ? sslResult.client : sslResult.server;
+        return sslSocket.getSession();
     }
 }
