@@ -626,6 +626,9 @@ final class ClientHandshaker extends Handshaker {
             // abbreviated initial handshake.
             if (isInitialHandshake) {
                 session.setAsSessionResumption(true);
+                // ALPN_CHANGES_BEGIN
+                alpnSelected(mesg);
+                // ALPN_CHANGES_END
             }
 
             return;
@@ -660,42 +663,47 @@ final class ClientHandshaker extends Handshaker {
 
         // ALPN_CHANGES_BEGIN
         if (isInitialHandshake)
+            alpnSelected(mesg);
+        // ALPN_CHANGES_END
+    }
+
+    // ALPN_CHANGES_BEGIN
+    private void alpnSelected(ServerHello mesg) throws IOException
+    {
+        ALPN.ClientProvider provider = (ALPN.ClientProvider)(conn != null ? ALPN.get(conn) : ALPN.get(engine));
+        Object ssl = conn != null ? conn : engine;
+        if (provider != null)
         {
-            ALPN.ClientProvider provider = (ALPN.ClientProvider)(conn != null ? ALPN.get(conn) : ALPN.get(engine));
-            Object ssl = conn != null ? conn : engine;
-            if (provider != null)
+            ALPNExtension extension = (ALPNExtension)mesg.extensions.get(ExtensionType.EXT_ALPN);
+            if (extension != null)
             {
-                ALPNExtension extension = (ALPNExtension)mesg.extensions.get(ExtensionType.EXT_ALPN);
-                if (extension != null)
+                List<String> protocols = extension.getProtocols();
+                try
                 {
-                    List<String> protocols = extension.getProtocols();
-                    try
-                    {
-                        String protocol = protocols == null || protocols.isEmpty() ? null : protocols.get(0);
-                        if (ALPN.debug)
-                            System.err.println("[C] ALPN protocol '" + protocol + "' selected by server for " + ssl);
-                        provider.selected(protocol);
-                    }
-                    catch (Throwable x)
-                    {
-                        fatalSE(Alerts.alert_no_application_protocol, "Could not negotiate application protocol", x);
-                    }
-                }
-                else
-                {
+                    String protocol = protocols == null || protocols.isEmpty() ? null : protocols.get(0);
                     if (ALPN.debug)
-                        System.err.println("[C] ALPN not supported by server for " + ssl);
-                    provider.unsupported();
+                        System.err.println("[C] ALPN protocol '" + protocol + "' selected by server for " + ssl);
+                    provider.selected(protocol);
+                }
+                catch (Throwable x)
+                {
+                    fatalSE(Alerts.alert_no_application_protocol, "Could not negotiate application protocol", x);
                 }
             }
             else
             {
                 if (ALPN.debug)
-                    System.err.println("[C] ALPN client provider not present for " + ssl);
+                    System.err.println("[C] ALPN not supported by server for " + ssl);
+                provider.unsupported();
             }
         }
-        // ALPN_CHANGES_END
+        else
+        {
+            if (ALPN.debug)
+                System.err.println("[C] ALPN client provider not present for " + ssl);
+        }
     }
+    // ALPN_CHANGES_END
 
     /*
      * Server's own key was either a signing-only key, or was too
