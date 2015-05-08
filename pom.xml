@@ -180,7 +180,7 @@
             <dependency>
                 <groupId>org.eclipse.jetty.alpn</groupId>
                 <artifactId>alpn-api</artifactId>
-                <version>1.1.0.v20141014</version>
+                <version>1.1.1.v20150508</version>
             </dependency>
             <dependency>
                 <groupId>junit</groupId>
