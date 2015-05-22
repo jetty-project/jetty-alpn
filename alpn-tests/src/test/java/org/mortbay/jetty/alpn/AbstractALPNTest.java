@@ -24,6 +24,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLSession;
 
 import org.eclipse.jetty.alpn.ALPN;
@@ -162,20 +164,18 @@ public abstract class AbstractALPNTest<T>
     public void testServerThrowsException() throws Exception
     {
         final String protocolName = "test";
-        final CountDownLatch latch = new CountDownLatch(3);
         ALPN.ClientProvider clientProvider = new ALPN.ClientProvider()
         {
             @Override
             public List<String> protocols()
             {
-                latch.countDown();
                 return Arrays.asList(protocolName);
             }
 
             @Override
             public void unsupported()
             {
-                latch.countDown();
+                Assert.fail();
             }
 
             @Override
@@ -193,10 +193,10 @@ public abstract class AbstractALPNTest<T>
             }
 
             @Override
-            public String select(List<String> protocols)
+            public String select(List<String> protocols) throws SSLException
             {
                 // By throwing, the server will close the connection.
-                throw new IllegalStateException("explicitly_thrown_by_test");
+                throw new SSLHandshakeException("explicitly_thrown_by_test");
             }
         };
 
@@ -205,7 +205,59 @@ public abstract class AbstractALPNTest<T>
             performTLSHandshake(null, clientProvider, serverProvider);
             Assert.fail();
         }
-        catch (Exception x)
+        catch (SSLHandshakeException x)
+        {
+            // Expected.
+        }
+    }
+
+    @Test
+    public void testClientThrowsException() throws Exception
+    {
+        final String protocolName = "test";
+        ALPN.ClientProvider clientProvider = new ALPN.ClientProvider()
+        {
+            @Override
+            public List<String> protocols()
+            {
+                return Arrays.asList(protocolName);
+            }
+
+            @Override
+            public void unsupported()
+            {
+                Assert.fail();
+            }
+
+            @Override
+            public void selected(String protocol) throws SSLException
+            {
+                if (!protocolName.equals(protocol))
+                    throw new SSLHandshakeException("explicitly_thrown_by_test");
+            }
+        };
+        ALPN.ServerProvider serverProvider = new ALPN.ServerProvider()
+        {
+            @Override
+            public void unsupported()
+            {
+                Assert.fail();
+            }
+
+            @Override
+            public String select(List<String> protocols) throws SSLException
+            {
+                // Return a protocol that the client does not support.
+                return "boom." + protocolName;
+            }
+        };
+
+        try
+        {
+            performTLSHandshake(null, clientProvider, serverProvider);
+            Assert.fail();
+        }
+        catch (SSLHandshakeException x)
         {
             // Expected.
         }
