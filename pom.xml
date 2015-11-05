@@ -83,6 +83,12 @@
                 </configuration>
             </plugin>
             <plugin>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <configuration>
+                    <useAgent>false</useAgent>
+                </configuration>
+            </plugin>
+            <plugin>
                 <artifactId>maven-release-plugin</artifactId>
                 <configuration>
                     <autoVersionSubmodules>true</autoVersionSubmodules>
