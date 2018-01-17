@@ -671,7 +671,7 @@ final class ClientHandshaker extends Handshaker {
         // Create a new session, we need to do the full handshake
         session = new SSLSessionImpl(protocolVersion, cipherSuite,
                             getLocalSupportedSignAlgs(),
-                            mesg.sessionId, getHostSE(), getPortSE());
+                            mesg.sessionId, getHostSE(), getPortSE(), false);
         session.setRequestedServerNames(requestedServerNames);
         setHandshakeSessionSE(session);
         if (debug != null && Debug.isOn("handshake")) {
@@ -1434,12 +1434,12 @@ final class ClientHandshaker extends Handshaker {
 
         // add elliptic curves and point format extensions
         if (cipherSuites.containsEC()) {
-            SupportedEllipticCurvesExtension ece =
-                SupportedEllipticCurvesExtension.createExtension(algorithmConstraints);
+            EllipticCurvesExtension ece =
+                EllipticCurvesExtension.createExtension(algorithmConstraints);
             if (ece != null) {
                 clientHelloMessage.extensions.add(ece);
                 clientHelloMessage.extensions.add(
-                   SupportedEllipticPointFormatsExtension.DEFAULT);
+                   EllipticPointFormatsExtension.DEFAULT);
             }
         }
 
