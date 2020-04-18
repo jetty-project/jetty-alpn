@@ -1,3 +1,10 @@
+ifdef::env-github[]
+:caution-caption: :fire:
+:important-caption: :exclamation:
+:note-caption: :paperclip:
+:tip-caption: :bulb:
+:warning-caption: :warning:
+endif::[]
 === Jetty ALPN
 
 Implementation of the ALPN (Application Layer Protocol Negotiation) Specification (link:https://tools.ietf.org/html/rfc7301[RFC 7301]) for OpenJDK 8.
