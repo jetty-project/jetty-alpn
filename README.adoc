@@ -9,8 +9,13 @@ endif::[]
 
 Implementation of the ALPN (Application Layer Protocol Negotiation) Specification (link:https://tools.ietf.org/html/rfc7301[RFC 7301]) for OpenJDK 8.
 
-IMPORTANT: The ALPN APIs have been backported from Java 9 to OpenJDK 8u251/8u252.
+[IMPORTANT]
+==== 
+The ALPN APIs have been backported from Java 9 to OpenJDK 8u251/8u252.
 Therefore, since OpenJDK 8u251/8u252 there is no more need for the Jetty ALPN boot jar provided by this project.
+
+Please read the following blog entry for more context: https://webtide.com/jetty-alpn-java-8u252/.
+====
 
 === How to use ALPN with OpenJDK 8
 
