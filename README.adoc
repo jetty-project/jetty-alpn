@@ -11,21 +11,28 @@ Implementation of the ALPN (Application Layer Protocol Negotiation) Specificatio
 
 [IMPORTANT]
 ==== 
-The ALPN APIs have been backported from Java 9 to OpenJDK 8u251/8u252.
-Therefore, since OpenJDK 8u251/8u252 there is no more need for the Jetty ALPN boot jar provided by this project.
+The ALPN APIs have been backported from Java 9 to OpenJDK 8u252.
+Therefore, since OpenJDK 8u252 there is no more need for the Jetty ALPN boot jar provided by this project.
 
 Please read the following blog entry for more context: https://webtide.com/jetty-alpn-java-8u252/.
+====
+
+[CAUTION]
+====
+There are Java vendors that produced a 8u251 version that unfortunately is incompatible with the previous OpenJDK version (8u242) _and_ incompatible with OpenJDK 8u252 as well. 
+
+There is no support for the 8u251 version from any vendor.
 ====
 
 === How to use ALPN with OpenJDK 8
 
 The following are the options that allow you to use ALPN in your applications.
 
-==== Option 1 - Enforce OpenJDK 8u251/8u252 or later
+==== Option 1 - Enforce OpenJDK 8u252 or later
 
-Enforce the use of OpenJDK 8u251/8u252 or later for your project.
+Enforce the use of OpenJDK 8u252 or later for your project.
 
-Use directly the backported ALPN APIs provided by the OpenJDK 8u251/8u252 or later, or libraries that use the backported ALPN APIs.
+Use directly the backported ALPN APIs provided by the OpenJDK 8u252 or later, or libraries that use the backported ALPN APIs.
 
 There is no more need to add the Jetty ALPN boot jar provided by this project to the bootclasspath.
 
@@ -35,9 +42,9 @@ Use the link:https://github.com/jetty-project/jetty-alpn-agent[Jetty ALPN Agent]
 
 Add the agent to your command line options for any version of Java 8.
 
-The agent will dynamically detect if the Java 8 version you are running requires the redefinition of the SSL classes (the redefinitions are provided by this project) to implement ALPN. If the Java 8 version you are using is 8u251/8u252 or later, the Jetty ALPN Agent will not redefine any class.
+The agent will dynamically detect if the Java 8 version you are running requires the redefinition of the SSL classes (the redefinitions are provided by this project) to implement ALPN. If the Java 8 version you are using is 8u252 or later, the Jetty ALPN Agent will not redefine any class.
 
-When using the Jetty ALPN Agent and OpenJDK 8u251/8u252 or later, applications should arrange to use directly, or via some other library such as the Jetty ALPN libraries, the backported ALPN APIs.
+When using the Jetty ALPN Agent and OpenJDK 8u252 or later, applications should arrange to use directly, or via some other library such as the Jetty ALPN libraries, the backported ALPN APIs.
 
 ==== Option 3 - Carefully setup the command line
 
@@ -45,13 +52,13 @@ This option requires that you know exactly what Java 8 version your application 
 
 If you use OpenJDK 8u242 or earlier, you must add the corresponding Jetty ALPN boot jar to the bootclasspath.
 
-If you use OpenJDK 8u251/8u252 or later, you must **NOT** add the Jetty ALPN boot jar to the bootclasspath.
+If you use OpenJDK 8u252 or later, you must **NOT** add the Jetty ALPN boot jar to the bootclasspath.
 
 ==== Jetty ALPN libraries
 
 The link:https://github.com/eclipse/jetty.project[Jetty Project] artifacts `jetty-alpn-openjdk8-[client|server]`, version 9.4.28 or later, provide transparent support for ALPN.
 
-If the OpenJDK version is 8u251/8u252 or later, they will use the backported ALPN APIs.
+If the OpenJDK version is 8u252 or later, they will use the backported ALPN APIs.
 
 Otherwise, they will use the Jetty ALPN APIs provided by the Jetty ALPN boot jar (this project) that must be therefore present in the bootclasspath.
 
